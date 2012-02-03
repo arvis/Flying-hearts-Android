@@ -82,8 +82,9 @@ public class First extends BaseGameActivity implements SnakeConstants {
 	private static final int LAYER_FOOD = LAYER_BACKGROUND + 1;
 	private static final int LAYER_SNAKE = LAYER_FOOD + 1;
 	private static final int LAYER_SCORE = LAYER_SNAKE + 1;
-	private static final int MENU_RESET = 0;
-	private static final int MENU_QUIT = 1;
+	
+	private static final int HEART_COLOR_COUNT = 4;
+	
 
 	// ===========================================================
 	// Fields
@@ -92,47 +93,57 @@ public class First extends BaseGameActivity implements SnakeConstants {
 	private Camera mCamera;
 	private int spawnCount=0;
 	
-	private DigitalOnScreenControl mDigitalOnScreenControl;
 
 	private BitmapTextureAtlas mFontTexture;
 	private Font mFont;
 
 	private BitmapTextureAtlas mBitmapTextureAtlas;
-	private TextureRegion mTailPartTextureRegion;
-	private TiledTextureRegion mHeadTextureRegion;
-	private TiledTextureRegion mFrogTextureRegion;
+	private BitmapTextureAtlas[] heartsTextureAtlasArr;
+	private TextureRegion[] heartsTextureReagionArr;
+	
+	//private TextureRegion mTailPartTextureRegion;
+	//private TiledTextureRegion mHeadTextureRegion;
+	//private TiledTextureRegion mFrogTextureRegion;
 
 	private BitmapTextureAtlas mBackgroundTexture;
 	private TextureRegion mBackgroundTextureRegion;
 
-	private BitmapTextureAtlas mOnScreenControlTexture;
-	private TextureRegion mOnScreenControlBaseTextureRegion;
-	private TextureRegion mOnScreenControlKnobTextureRegion;
+	//private BitmapTextureAtlas mOnScreenControlTexture;
+	//private TextureRegion mOnScreenControlBaseTextureRegion;
+	//private TextureRegion mOnScreenControlKnobTextureRegion;
 	
-	private BitmapTextureAtlas mMenuTexture;
+	private BitmapTextureAtlas[] menuButtonsTextureAtlas;
+	private TextureRegion[] menuButtonsTextures;
+	
+	private BitmapTextureAtlas mMenuBackGround;
+	
 	protected TextureRegion mMenuResetTextureRegion;
 	protected TextureRegion mMenuQuitTextureRegion;
 	protected TextureRegion mMenuBackgroundTextureRegion; 
 
 	private Scene mScene;
 	//protected MenuScene mMenuScene;
-	protected Scene mMenuScene;
+	private Scene mMenuScene;
+	private Scene gameOverScene;
 
-	private Snake mSnake;
-	private Frog mFrog;
-	private TargetObject heart;
+//	private Snake mSnake;
+//	private Frog mFrog;
+//	private TargetObject heart;
 
 	public int mScore = 0;
 	public int lives=3;
 	public int gameLevel=1;
 	private boolean gameRunning=false;
+	private boolean menuTouched=false;
 	
 	private ChangeableText mLivesText;
 	private ChangeableText mScoreText;
-	private boolean moving=false;
+	
+	private TimerHandler spawnHandler;
+	
 
 	private Sound mGameOverSound;
-	private Sound mMunchSound;
+	//private Sound mMunchSound;
 	private Sound mKissSound;
 	private Sound mMissedSound;
 	
@@ -164,64 +175,63 @@ public class First extends BaseGameActivity implements SnakeConstants {
 	@Override
 	public void onLoadResources() {
 		/* Load the font we are going to use. */
-/*		
-		FontFactory.setAssetBasePath("font/");
-		this.mFontTexture = new BitmapTextureAtlas(512, 512, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
-		this.mFont = FontFactory.createFromAsset(this.mFontTexture, this, "Plok.ttf", 32, true, Color.BLACK);
-
-		this.mEngine.getTextureManager().loadTexture(this.mFontTexture);
-		this.getFontManager().loadFont(this.mFont);
-*/
-		
-		// FIXME: for now loading default font
 		this.mFontTexture = new BitmapTextureAtlas(256, 256, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
-		//this.mFont = new Font(this.mFontTexture, Typeface.create(Typeface.DEFAULT, Typeface.BOLD), 32, true, Color.BLACK);
-		
 		this.mFont = new Font(this.mFontTexture, Typeface.create(Typeface.DEFAULT, Typeface.NORMAL), 24, true, Color.BLACK);
-		
 		this.mEngine.getTextureManager().loadTexture(this.mFontTexture);
 		this.mEngine.getFontManager().loadFont(this.mFont);
-		
-		
-/*		
-		this.mFont = new Font(this.mFontTexture, Typeface.create(Typeface.DEFAULT, Typeface.BOLD), 32, true, Color.BLACK);
-		this.mEngine.getTextureManager().loadTexture(this.mFontTexture);
-		this.getFontManager().loadFont(this.mFont);
-*/		
 		
 		/* Load all the textures this game needs. */
 		this.mBitmapTextureAtlas = new BitmapTextureAtlas(128, 128, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
 		BitmapTextureAtlasTextureRegionFactory.setAssetBasePath("gfx/");
 		
+//		this.mOnScreenControlTexture = new BitmapTextureAtlas(256, 128, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+//		this.mOnScreenControlBaseTextureRegion = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mOnScreenControlTexture, this, "onscreen_control_base.png", 0, 0);
+//		this.mOnScreenControlKnobTextureRegion = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mOnScreenControlTexture, this, "onscreen_control_knob.png", 128, 0);
 		
-		this.mHeadTextureRegion = BitmapTextureAtlasTextureRegionFactory.createTiledFromAsset(this.mBitmapTextureAtlas, this, "snake_head.png", 0, 0, 3, 1);
-		this.mTailPartTextureRegion = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mBitmapTextureAtlas, this, "snake_tailpart.png", 96, 0);
-		this.mFrogTextureRegion = BitmapTextureAtlasTextureRegionFactory.createTiledFromAsset(this.mBitmapTextureAtlas, this, "frog.png", 0, 64, 3, 1);
-		this.mOnScreenControlTexture = new BitmapTextureAtlas(256, 128, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
-		this.mOnScreenControlBaseTextureRegion = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mOnScreenControlTexture, this, "onscreen_control_base.png", 0, 0);
-		this.mOnScreenControlKnobTextureRegion = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mOnScreenControlTexture, this, "onscreen_control_knob.png", 128, 0);
+		
+		heartsTextureAtlasArr=new BitmapTextureAtlas[HEART_COLOR_COUNT];
+		// TODO: recreate as loop
+		heartsTextureAtlasArr[0]= new BitmapTextureAtlas(128, 128, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		heartsTextureAtlasArr[1]= new BitmapTextureAtlas(128, 128, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		heartsTextureAtlasArr[2]= new BitmapTextureAtlas(128, 128, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		heartsTextureAtlasArr[3]= new BitmapTextureAtlas(128, 128, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		
+		heartsTextureReagionArr=new TextureRegion[HEART_COLOR_COUNT];
+		
+		heartsTextureReagionArr[0] = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.heartsTextureAtlasArr[0],
+				this, "red_heart.png", 0, 0);
+		
+		heartsTextureReagionArr[1] = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.heartsTextureAtlasArr[1],
+				this, "violet_heart.png", 0, 0);
+		
+		heartsTextureReagionArr[2] = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.heartsTextureAtlasArr[2],
+				this, "yellow_heart.png", 0, 0);
 
+		heartsTextureReagionArr[3] = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.heartsTextureAtlasArr[3],
+				this, "green_heart.png", 0, 0);
 		
-/*		
-		this.mMenuTexture = new BitmapTextureAtlas(256, 128, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
-		this.mMenuResetTextureRegion = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mMenuTexture, this, "precise_valentine.png", 0, 0);
-		this.mMenuQuitTextureRegion = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mMenuTexture, this, "love_time.png", 0, 0);
-		this.mEngine.getTextureManager().loadTexture(this.mMenuTexture);
-*/		
 		
-		this.mMenuTexture = new BitmapTextureAtlas(256, 128, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
-		this.mMenuResetTextureRegion = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mMenuTexture, this, "precise_valentine.png", 0, 0);
-		this.mMenuQuitTextureRegion = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mMenuTexture, this, "love_time.png", 0, 0);
+		this.mEngine.getTextureManager().loadTextures(heartsTextureAtlasArr);
+		
+
+		menuButtonsTextureAtlas=new BitmapTextureAtlas[2];
+		menuButtonsTextures=new TextureRegion[2];
+		
+		this.menuButtonsTextureAtlas[0] = new BitmapTextureAtlas(256, 128, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		this.menuButtonsTextureAtlas[1] = new BitmapTextureAtlas(256, 128, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		this.menuButtonsTextures[0] = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.menuButtonsTextureAtlas[0], this, "precise_valentine.png", 0, 0);
+		this.menuButtonsTextures[1] = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.menuButtonsTextureAtlas[1], this, "love_time.png", 0, 0);
+		this.mEngine.getTextureManager().loadTextures(menuButtonsTextureAtlas);
+
+		//TextureRegion menuBack  = BitmapTextureAtlasTextureRegionFactory.createFromAsset(texture1, this, "back_blue.png", 0, 0);
 
 		
 		this.mBackgroundTexture = new BitmapTextureAtlas(1024, 512, TextureOptions.DEFAULT);
-		
-		this.mMenuBackgroundTextureRegion = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mBackgroundTexture, this, "back_blue.png", 0, 0);
-		
-		
-		
+		this.mMenuBackGround= new BitmapTextureAtlas(1024, 512, TextureOptions.DEFAULT);
+		this.mMenuBackgroundTextureRegion = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mMenuBackGround, this, "back_blue.png", 0, 0);
+
 		this.mBackgroundTextureRegion = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mBackgroundTexture, this, "back_red.png", 0, 0);
-		this.mEngine.getTextureManager().loadTextures(this.mBackgroundTexture, this.mBitmapTextureAtlas, this.mOnScreenControlTexture);
+		this.mEngine.getTextureManager().loadTextures(this.mBackgroundTexture, this.mBitmapTextureAtlas, this.mMenuBackGround);
 
 		/* Load all the sounds this game needs. */
 		try {
@@ -241,8 +251,6 @@ public class First extends BaseGameActivity implements SnakeConstants {
 		this.mEngine.registerUpdateHandler(new FPSLogger());
 
 		// Splash screens vienkaars: http://www.andengine.org/forums/tutorials/very-simple-splash-screen-alternative-t5790.html
-		
-		this.createMenuScene();
 		
 		
 		this.mScene = new Scene();
@@ -310,12 +318,24 @@ public class First extends BaseGameActivity implements SnakeConstants {
 
 
 		//this.mScene.setChildScene(pChildScene, pModalDraw, pModalUpdate, pModalTouch)
+		
+		this.createMenuScene();
 		this.mScene.setChildScene(this.mMenuScene, true, true, true);
 		
 		/* spawning heart every 2 seconds. */
 
 
 		//FIXME: commented out for testing
+		
+		this.spawnHandler=new TimerHandler(2f, true, new ITimerCallback() {
+			@Override
+			public void onTimePassed(final TimerHandler pTimerHandler) {
+				//if(First.this.mGameRunning) {
+					First.this.spawnSprite();
+				//}
+			}
+		});
+		
 /*
 		this.mScene.registerUpdateHandler(new TimerHandler(2f, true, new ITimerCallback() {
 			@Override
@@ -385,28 +405,30 @@ public class First extends BaseGameActivity implements SnakeConstants {
 	void outOfScreen(final TargetObject spr){
 		lives--;
 		this.mLivesText.setText("Lives: "+lives);
+		mMissedSound.play();
 
 		this.removeSprite(spr);
 		//removeSprite(spawnHeart);
 		if (lives<1){
-			this.gameOver();
+			this.onGameOver();
 		}
 		
 		
 	}
 	
-	void gameOver(){
-		// show game over screen stop all etc
-		this.mGameRunning=false;
-		
-		
-	}
 	
 	void heartTouched(final TargetObject spr){
 		mScore++;
 		this.mScoreText.setText("Score: "+mScore);
+		this.mKissSound.play();
 		this.removeSprite(spr);
 
+	}
+	
+	void startNewGameClassic(){
+		gameRunning=true;
+		
+		
 	}
 	
 	
@@ -431,15 +453,16 @@ public class First extends BaseGameActivity implements SnakeConstants {
 	
 	void spawnSprite(){
 		
-		//spawnCount++;
-		String heartSpriteName=getSpriteName();
+		//String heartSpriteName=getSpriteName();
 		
-		TextureRegion balloonReg = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mBitmapTextureAtlas, this, heartSpriteName, 0, 0);
+		Random rnd2=new Random();
+		int rndHeart=rnd2.nextInt(3);
+		
 		Random randomGenerator = new Random();
 	    int randomX = randomGenerator.nextInt(CAMERA_WIDTH-70);
 	    int randomY = CAMERA_HEIGHT;//randomGenerator.nextInt(100);
 		
-		final TargetObject spawnHeart=new TargetObject(randomX, randomY,balloonReg){
+		final TargetObject spawnHeart=new TargetObject(randomX, randomY,heartsTextureReagionArr[rndHeart] ){
 			@Override
 			public boolean onAreaTouched(final TouchEvent pSceneTouchEvent, final float pTouchAreaLocalX, final float pTouchAreaLocalY) {
 				this.setVisible(false);
@@ -450,26 +473,6 @@ public class First extends BaseGameActivity implements SnakeConstants {
 				return true;
 			}
 		};
-
-/*		
-		spawnHeart.registerUpdateHandler(new TimerHandler(0.2f, true, new ITimerCallback() {
-			@Override
-			public void onTimePassed(final TimerHandler pTimerHandler) {
-				//if(First.this.mGameRunning) {
-				
-				// kur kusteeties http://code.google.com/p/andengine/source/browse/src/org/anddev/andengine/entity/modifier/MoveModifier.java
-				int heartSpeed=-3;
-				
-				float currY=spawnHeart.getY()+heartSpeed;
-				spawnHeart.setPosition(spawnHeart.getX() , currY);
-				if (currY<10){
-					removeSprite(spawnHeart);
-					return;
-				}
-				//}
-			}
-		}));
-*/
 		
 		//MoveModifier aa=new MoveModifier(pDuration, pFromX, pToX, pFromY, pToY)
 		
@@ -481,15 +484,11 @@ public class First extends BaseGameActivity implements SnakeConstants {
 				// TODO Auto-generated method stub
 				super.onModifierFinished(pItem);
 				outOfScreen(spawnHeart);
-				//removeSprite(spawnHeart);
-				
 			}
 			
 			
 		});
 		//.registerEntityModifier(new MoveModifier(30, 0, CAMERA_WIDTH - face.getWidth(), 0, CAMERA_HEIGHT - face.getHeight()));
-		
-		
 		
 		// kur kusteeties http://code.google.com/p/andengine/source/browse/src/org/anddev/andengine/entity/modifier/MoveModifier.java
 		this.mScene.attachChild(spawnHeart);
@@ -498,12 +497,44 @@ public class First extends BaseGameActivity implements SnakeConstants {
 	}
 	
 	
-	protected void createMenuScene() {
+	void newGame(){
+		this.mScene.clearChildScene();
+		this.mScene.registerUpdateHandler(this.spawnHandler);
+	}
+	
+	private void createMenuScene() {
 		
 		this.mMenuScene = new Scene();
-		final Sprite newGameButton= new Sprite(10, 10, this.mMenuResetTextureRegion);
 		
-		this.mMenuScene.attachChild(newGameButton); 
+		Sprite newGameButton= new Sprite(10, 50, this.menuButtonsTextures[0]){
+			
+			@Override
+			public boolean onAreaTouched(TouchEvent pSceneTouchEvent,
+					float pTouchAreaLocalX, float pTouchAreaLocalY) {
+				// TODO Auto-generated method stub
+				//menuTouched=true;
+				//First.this.mMenuScene.setVisible(false);
+				//First.this.mScene.clearChildScene();
+				newGame();
+				this.setVisible(false);
+				System.out.println("menu touched");
+				
+				
+				return super
+						.onAreaTouched(pSceneTouchEvent, pTouchAreaLocalX, pTouchAreaLocalY);
+			}
+		};
+		
+		//mMenuBackgroundTextureRegion
+		this.mMenuScene.attachChild(new Sprite(0, 0,this.mMenuBackgroundTextureRegion));
+		this.mMenuScene.attachChild(newGameButton);
+		
+		Sprite newTimedGameButton= new Sprite(10, 100, this.menuButtonsTextures[1]);
+		this.mMenuScene.attachChild(newTimedGameButton);
+		
+		
+		this.mMenuScene.registerTouchArea(newGameButton);		
+		
 		this.mMenuScene.setBackgroundEnabled(true);
 		
 		
@@ -527,29 +558,28 @@ public class First extends BaseGameActivity implements SnakeConstants {
  */
 	}
 	
+
+	void createGameOverScene(){
+		
+		this.gameOverScene= new Scene();
+		
+		TextureRegion tmp_reg = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mMenuBackGround, this, "back_violet.png", 0, 0);
+		Sprite gameOverBack = new Sprite(10, 50, tmp_reg);
+		this.gameOverScene.attachChild(gameOverBack);
+
+		
+		
+		
+	}
 	
-	private void setFrogToRandomCell() {
-		this.mFrog.setCell(MathUtils.random(1, CELLS_HORIZONTAL - 2), MathUtils.random(1, CELLS_VERTICAL - 2));
-	}
-
-	private void handleNewSnakePosition() {
-		final SnakeHead snakeHead = this.mSnake.getHead();
-
-		if(snakeHead.getCellX() < 0 || snakeHead.getCellX() >= CELLS_HORIZONTAL || snakeHead.getCellY() < 0 || snakeHead.getCellY() >= CELLS_VERTICAL) {
-			this.onGameOver();
-		} else if(snakeHead.isInSameCell(this.mFrog)) {
-			this.mScore += 50;
-			this.mScoreText.setText("Score: " + this.mScore);
-			this.mSnake.grow();
-			this.mMunchSound.play();
-			this.setFrogToRandomCell();
-		}
-	}
-
 	private void onGameOver() {
-		this.mGameOverSound.play();
-		this.mScene.getChild(LAYER_SCORE).attachChild(this.mGameOverText);
 		this.mGameRunning = false;
+		this.mGameOverSound.play();
+		this.mScene.unregisterUpdateHandler(spawnHandler);
+		
+		this.createGameOverScene();
+		this.mScene.setChildScene(this.gameOverScene);
+		
 	}
 
 	// ===========================================================
