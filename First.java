@@ -2,7 +2,11 @@ package com.arvis.andeng;
 
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import javax.microedition.khronos.opengles.GL10;
 
@@ -25,18 +29,17 @@ import org.anddev.andengine.entity.modifier.RotationModifier;
 import org.anddev.andengine.entity.modifier.ScaleModifier;
 import org.anddev.andengine.entity.scene.Scene;
 import org.anddev.andengine.entity.scene.Scene.IOnSceneTouchListener;
+import org.anddev.andengine.entity.scene.background.ColorBackground;
 import org.anddev.andengine.entity.scene.menu.MenuScene;
 import org.anddev.andengine.entity.scene.menu.item.SpriteMenuItem;
 import org.anddev.andengine.entity.sprite.Sprite;
 import org.anddev.andengine.entity.text.ChangeableText;
 import org.anddev.andengine.entity.text.Text;
 import org.anddev.andengine.entity.util.FPSLogger;
-import com.arvis.andeng.adt.Direction;
-import com.arvis.andeng.adt.SnakeSuicideException;
-import com.arvis.andeng.entity.Frog;
-import com.arvis.andeng.entity.Snake;
-import com.arvis.andeng.entity.SnakeHead;
-import com.arvis.andeng.util.constants.SnakeConstants;
+import com.google.ads.AdRequest;
+import com.google.ads.AdSize;
+import com.google.ads.AdView;
+
 import org.anddev.andengine.opengl.font.Font;
 import org.anddev.andengine.opengl.font.FontFactory;
 import org.anddev.andengine.opengl.texture.TextureOptions;
@@ -44,14 +47,21 @@ import org.anddev.andengine.opengl.texture.atlas.bitmap.BitmapTextureAtlas;
 import org.anddev.andengine.opengl.texture.atlas.bitmap.BitmapTextureAtlasTextureRegionFactory;
 import org.anddev.andengine.opengl.texture.region.TextureRegion;
 import org.anddev.andengine.opengl.texture.region.TiledTextureRegion;
+import org.anddev.andengine.opengl.view.RenderSurfaceView;
 import org.anddev.andengine.ui.activity.BaseGameActivity;
+import org.anddev.andengine.ui.activity.LayoutGameActivity;
 import org.anddev.andengine.util.Debug;
 import org.anddev.andengine.util.HorizontalAlign;
 import org.anddev.andengine.util.MathUtils;
 
 import android.R.bool;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.os.Handler;
+import android.view.Gravity;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 
 import org.anddev.andengine.engine.handler.IUpdateHandler;
 import org.anddev.andengine.input.touch.TouchEvent;
@@ -64,7 +74,8 @@ import org.anddev.andengine.input.touch.TouchEvent;
  * @author Nicolas Gramlich
  * @since 02:26:05 - 08.07.2010
  */
-public class First extends BaseGameActivity implements SnakeConstants {
+//public class First extends BaseGameActivity implements SnakeConstants {
+public class First extends LayoutGameActivity  {
 	// ===========================================================
 	// Constants
 	// ===========================================================
@@ -121,26 +132,45 @@ public class First extends BaseGameActivity implements SnakeConstants {
 	protected TextureRegion mMenuQuitTextureRegion;
 	protected TextureRegion mMenuBackgroundTextureRegion; 
 
+	private BitmapTextureAtlas gameOverBackGroundAtlas;
+	private TextureRegion gameOverBackGround;
+	
+	private BitmapTextureAtlas gameOverTouchAtlas;
+	private TextureRegion gameOverTouch;
+	
 	private Scene mScene;
 	//protected MenuScene mMenuScene;
 	private Scene mMenuScene;
-	private Scene gameOverScene;
+//	private Scene gameOverScene;
+	private Sprite gameOverBack; 
+	private Sprite touchToContinue; 
+	
+	
+//	private AdView adView; 
 
-//	private Snake mSnake;
-//	private Frog mFrog;
-//	private TargetObject heart;
-
+	
 	public int mScore = 0;
 	public int lives=3;
 	public int gameLevel=1;
-	private boolean gameRunning=false;
-	private boolean menuTouched=false;
+	int gameMode=0; // 0 catch all; 1- timed run; 2- catch based on colors
+	int secondsLeft=30;
+	int[] highScores = {0,0}; 
+	
+	int[] levelupScores = {0,5,15,45,70,100,200,300}; // when level is going up TODO: think how to implement this better
+	int[] heartSpeedArr = {28,27,26,25,24,23,22,21,20,19,18,17,16};
+	float[] spawnSpeedArr = {2,2,1.8f,1.7f,1.6f,1.4f,1.2f,1.0f,0.8f,0.6f,0.5f,0.3f,0.3f,0.3f,0.3f,0.3f,0.3f,0.3f,0.3f,0.3f,0.3f};
+	
+	float heartUpSpeed=2; // for how many seconds heart is crossing screen. Less is faster!
 	
 	private ChangeableText mLivesText;
 	private ChangeableText mScoreText;
+	private ChangeableText highScoreText;
+	private ChangeableText flyUpText;
+	
 	
 	private TimerHandler spawnHandler;
-	
+	private TimerHandler countdownHandler;
+	//private MoveModifier flyUpModifier;
 
 	private Sound mGameOverSound;
 	//private Sound mMunchSound;
@@ -148,8 +178,30 @@ public class First extends BaseGameActivity implements SnakeConstants {
 	private Sound mMissedSound;
 	
 	protected boolean mGameRunning;
-	private Text mGameOverText;
 
+	 public static final String PREFS_NAME = "FlyingHeartsHighScores";
+	
+	
+	
+	String PUBLISHER_ID="a14f2c7bf3bf885";
+	
+	
+    final Handler adsHandler = new Handler();
+
+    final Runnable showAdsRunnable = new Runnable() {
+        public void run() {
+        	showAds();
+        }
+    };
+	
+    final Runnable hideAdsRunnable = new Runnable() {
+        public void run() {
+        	unshowAds();
+        }
+    };
+    
+    
+	
 	// ===========================================================
 	// Constructors
 	// ===========================================================
@@ -168,8 +220,9 @@ public class First extends BaseGameActivity implements SnakeConstants {
 		// par resolution labs
 		// http://www.andengine.org/forums/gles1/resolutions-t6036.html
 		
-		
 		return new Engine(new EngineOptions(true, ScreenOrientation.PORTRAIT , new RatioResolutionPolicy(CAMERA_WIDTH, CAMERA_HEIGHT), this.mCamera).setNeedsSound(true));
+		
+		
 	}
 
 	@Override
@@ -191,11 +244,19 @@ public class First extends BaseGameActivity implements SnakeConstants {
 		
 		heartsTextureAtlasArr=new BitmapTextureAtlas[HEART_COLOR_COUNT];
 		// TODO: recreate as loop
+
+/*		
 		heartsTextureAtlasArr[0]= new BitmapTextureAtlas(128, 128, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
 		heartsTextureAtlasArr[1]= new BitmapTextureAtlas(128, 128, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
 		heartsTextureAtlasArr[2]= new BitmapTextureAtlas(128, 128, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
 		heartsTextureAtlasArr[3]= new BitmapTextureAtlas(128, 128, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
-		
+*/
+
+		heartsTextureAtlasArr[0]= new BitmapTextureAtlas(64, 64, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		heartsTextureAtlasArr[1]= new BitmapTextureAtlas(64, 64, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		heartsTextureAtlasArr[2]= new BitmapTextureAtlas(64, 64, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		heartsTextureAtlasArr[3]= new BitmapTextureAtlas(64, 64, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+
 		heartsTextureReagionArr=new TextureRegion[HEART_COLOR_COUNT];
 		
 		heartsTextureReagionArr[0] = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.heartsTextureAtlasArr[0],
@@ -219,27 +280,44 @@ public class First extends BaseGameActivity implements SnakeConstants {
 		
 		this.menuButtonsTextureAtlas[0] = new BitmapTextureAtlas(256, 128, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
 		this.menuButtonsTextureAtlas[1] = new BitmapTextureAtlas(256, 128, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
-		this.menuButtonsTextures[0] = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.menuButtonsTextureAtlas[0], this, "precise_valentine.png", 0, 0);
+		//this.menuButtonsTextureAtlas[2] = new BitmapTextureAtlas(256, 128, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		
+		this.menuButtonsTextures[0] = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.menuButtonsTextureAtlas[0], this, "dont_fail_in_love.png", 0, 0);
 		this.menuButtonsTextures[1] = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.menuButtonsTextureAtlas[1], this, "love_time.png", 0, 0);
+		//this.menuButtonsTextures[2] = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.menuButtonsTextureAtlas[1], this, "love_time.png", 0, 0);
 		this.mEngine.getTextureManager().loadTextures(menuButtonsTextureAtlas);
 
 		//TextureRegion menuBack  = BitmapTextureAtlasTextureRegionFactory.createFromAsset(texture1, this, "back_blue.png", 0, 0);
 
 		
 		this.mBackgroundTexture = new BitmapTextureAtlas(1024, 512, TextureOptions.DEFAULT);
+		
 		this.mMenuBackGround= new BitmapTextureAtlas(1024, 512, TextureOptions.DEFAULT);
-		this.mMenuBackgroundTextureRegion = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mMenuBackGround, this, "back_blue.png", 0, 0);
+		this.mMenuBackgroundTextureRegion = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mMenuBackGround, this, "main_logo.png", 0, 0);
 
+		this.gameOverBackGroundAtlas = new BitmapTextureAtlas(1024, 512, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		this.gameOverBackGround  = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.gameOverBackGroundAtlas, this, "game_over.png", 0, 0);
+		
+		this.gameOverTouchAtlas = new BitmapTextureAtlas(1024, 512, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		this.gameOverTouch  = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.gameOverTouchAtlas, this, "touch_to_continue_mid.png", 0, 0);
+		this.mEngine.getTextureManager().loadTextures(this.gameOverBackGroundAtlas,this.gameOverTouchAtlas);
+		
+		
+		
 		this.mBackgroundTextureRegion = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mBackgroundTexture, this, "back_red.png", 0, 0);
 		this.mEngine.getTextureManager().loadTextures(this.mBackgroundTexture, this.mBitmapTextureAtlas, this.mMenuBackGround);
 
+		
+		
+		
 		/* Load all the sounds this game needs. */
 		try {
 			SoundFactory.setAssetBasePath("mfx/");
-			this.mGameOverSound = SoundFactory.createSoundFromAsset(this.getSoundManager(), this, "game_over.ogg");
+			
+			this.mGameOverSound = SoundFactory.createSoundFromAsset(this.getSoundManager(), this, "Looser2.wav");
 			//this.mMunchSound = SoundFactory.createSoundFromAsset(this.getSoundManager(), this, "munch.ogg");
-			this.mKissSound = SoundFactory.createSoundFromAsset(this.getSoundManager(), this, "munch.ogg");
-			this.mMissedSound = SoundFactory.createSoundFromAsset(this.getSoundManager(), this, "munch.ogg");
+			this.mKissSound = SoundFactory.createSoundFromAsset(this.getSoundManager(), this, "little_kiss.wav");
+			this.mMissedSound = SoundFactory.createSoundFromAsset(this.getSoundManager(), this, "mouth_pop.wav");
 
 		} catch (final IOException e) {
 			Debug.e(e);
@@ -260,94 +338,75 @@ public class First extends BaseGameActivity implements SnakeConstants {
 
 		/* No background color needed as we have a fullscreen background sprite. */
 		this.mScene.setBackgroundEnabled(true);
+		
+		//color hex is f3a8ab
+		this.mScene.setBackground(new ColorBackground(0.95294117647058823529411764705882f,
+				0.65882352941176470588235294117647f , 0.67058823529411764705882352941176f));
 		this.mScene.getChild(LAYER_BACKGROUND).attachChild(new Sprite(0, 0, this.mBackgroundTextureRegion));
 
-
-		this.mLivesText  = new ChangeableText(2,2, this.mFont, "Lives: 3", "Lives: X".length());
-		//this.mScoreText.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
-		//this.mScoreText.setAlpha(0.5f);
-		this.mScene.getChild(LAYER_SCORE).attachChild(this.mLivesText);
-		//this.mLivesText.setText("Lives: "+lives);
+		this.createMenuScene();
+		this.createGameOverScene();
 		
+
+		// creating font messages
+		this.mLivesText  = new ChangeableText(2,2, this.mFont, "Lives: 3", "Lives: X".length());
 		this.mScoreText = new ChangeableText(CAMERA_WIDTH-60,2, this.mFont, "Score: 0000", "Score: XXXX".length());
 		this.mScoreText.setPosition(CAMERA_WIDTH-this.mScoreText.getBaseWidth()-5 , 2);
 		this.mScoreText.setText("Score: "+mScore);
 
-		//this.mScoreText.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
-		//this.mScoreText.setAlpha(0.5f);
+		this.highScoreText= new ChangeableText(80,100, this.mFont, "High score: 0000",HorizontalAlign.CENTER,25 );
+		this.highScoreText.setVisible(false);
+
+//		this.flyUpText = new ChangeableText(10,200, this.mFont, "Collect all hearts!",HorizontalAlign.CENTER,255);
+//		this.flyUpText.setVisible(false);
+
+		
 		this.mScene.getChild(LAYER_SCORE).attachChild(this.mScoreText);
+		this.mScene.getChild(LAYER_SCORE).attachChild(this.mLivesText);
 		
-/*
-		this.mFrog = new Frog(0, 0, this.mFrogTextureRegion) {
-			@Override
-			public boolean onAreaTouched(final TouchEvent pSceneTouchEvent, final float pTouchAreaLocalX, final float pTouchAreaLocalY) {
-				mScore++;
-				this.setVisible(false);
-				return true;
-			}
-		};
-*/		
-
-		
-		/*		
-		
-		TextureRegion balloonReg = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mBitmapTextureAtlas, this, "blue_heart.png", 0, 0);
-		this.heart=new TargetObject(50, 50,balloonReg){
-			@Override
-			public boolean onAreaTouched(final TouchEvent pSceneTouchEvent, final float pTouchAreaLocalX, final float pTouchAreaLocalY) {
-				mScore++;
-				removeSprite(this);
-				//this.setPosition(100, 100);
-				//this.setVisible(false);
-				return true;
-			}
-			
-		};
-		
-		this.mScene.attachChild(this.heart);
-		this.mScene.registerTouchArea(this.heart);
-*/
-		
-		//this.mScene.getChild(LAYER_FOOD).attachChild(this.heart);
-		
-		
-		//this.mFrog.animate(1000);
-		//this.setFrogToRandomCell();
-		//this.mScene.getChild(LAYER_FOOD).attachChild(this.mFrog);
-		//this.mScene.getChild(LAYER_FOOD).attachChild(this.mFrog);
-
-
-		//this.mScene.setChildScene(pChildScene, pModalDraw, pModalUpdate, pModalTouch)
-		
-		this.createMenuScene();
-		this.mScene.setChildScene(this.mMenuScene, true, true, true);
+		this.highScoreText.setZIndex(3);
+		this.mScene.attachChild(this.highScoreText);
+		//this.mScene.attachChild(this.flyUpText);
 		
 		/* spawning heart every 2 seconds. */
-
-
-		//FIXME: commented out for testing
-		
 		this.spawnHandler=new TimerHandler(2f, true, new ITimerCallback() {
 			@Override
 			public void onTimePassed(final TimerHandler pTimerHandler) {
 				//if(First.this.mGameRunning) {
-					First.this.spawnSprite();
+					int maxHearts=gameLevel;
+					// no more than 5 hearts TODO: make better with constants
+					if (maxHearts>5) maxHearts=5;
+					
+					//on timed mode spawn much more
+					if (gameMode==1) maxHearts=4;
+				
+					for (int i=1;i<=gameLevel;i++){
+						First.this.spawnSprite();
+					}
 				//}
 			}
 		});
 		
-/*
-		this.mScene.registerUpdateHandler(new TimerHandler(2f, true, new ITimerCallback() {
+		
+		this.countdownHandler=new TimerHandler(1f, true, new ITimerCallback() {
 			@Override
 			public void onTimePassed(final TimerHandler pTimerHandler) {
 				//if(First.this.mGameRunning) {
-					First.this.spawnSprite();
-					First.this.spawnSprite();
-					
+				First.this.secondsLeft--;
+				setCountDown();
+				
+				if (First.this.secondsLeft<=0){
+					First.this.secondsLeft=0;
+					setCountDown();
+					First.this.onGameOver();
+				}
 				//}
 			}
-		}));
-*/		
+		});
+		
+		
+		getHighScores();
+		showMainMenu();
 		
 		return this.mScene;
 		
@@ -379,6 +438,65 @@ public class First extends BaseGameActivity implements SnakeConstants {
 */
 	}
 
+	
+    @Override
+    protected int getLayoutID()
+    {
+    return R.layout.main;
+    }
+
+    @Override
+    protected int getRenderSurfaceViewID()
+    {
+    return R.id.xmllayoutRenderSurfaceView;
+    }
+	
+	
+	// testing how to show and hide ads
+	
+/*	
+	@Override
+	protected void onSetContentView() {
+		super.onSetContentView();
+
+		
+        final FrameLayout frameLayout = new FrameLayout(this);
+        final FrameLayout.LayoutParams frameLayoutLayoutParams =
+                new FrameLayout.LayoutParams(FrameLayout.LayoutParams.FILL_PARENT,
+                                             FrameLayout.LayoutParams.FILL_PARENT);
+ 
+        //final AdView adView = new AdView(this, AdSize.BANNER, PUBLISHER_ID);
+        adView = new AdView(this, AdSize.BANNER, PUBLISHER_ID);
+ 
+        adView.refreshDrawableState();
+        adView.setVisibility(AdView.VISIBLE);
+        final FrameLayout.LayoutParams adViewLayoutParams =
+                new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT,
+                                             FrameLayout.LayoutParams.WRAP_CONTENT,
+                                             Gravity.CENTER_HORIZONTAL|Gravity.TOP);
+
+        AdRequest adRequest = new AdRequest();
+        adRequest.addTestDevice("852FE8BF91ED9DA383DE924AF6345291");
+        
+        adView.loadAd(adRequest);
+        
+ 
+        this.mRenderSurfaceView = new RenderSurfaceView(this);
+        mRenderSurfaceView.setRenderer(mEngine);
+ 
+        final android.widget.FrameLayout.LayoutParams surfaceViewLayoutParams =
+                new FrameLayout.LayoutParams(super.createSurfaceViewLayoutParams());
+ 
+        frameLayout.addView(this.mRenderSurfaceView, surfaceViewLayoutParams);
+        frameLayout.addView(adView, adViewLayoutParams);
+ 
+        this.setContentView(frameLayout, frameLayoutLayoutParams);
+		
+		        
+	}
+*/	
+	
+	
 	@Override
 	public void onLoadComplete() {
 
@@ -403,31 +521,52 @@ public class First extends BaseGameActivity implements SnakeConstants {
 	
 	
 	void outOfScreen(final TargetObject spr){
-		lives--;
-		this.mLivesText.setText("Lives: "+lives);
-		mMissedSound.play();
-
+		
 		this.removeSprite(spr);
-		//removeSprite(spawnHeart);
-		if (lives<1){
-			this.onGameOver();
+		if (gameMode==1) return;
+
+		if (mGameRunning){
+			lives--;
+			this.mLivesText.setText("Lives: "+lives);
+			mMissedSound.play();
+			if (lives<1){
+				this.mGameRunning=false;
+				this.onGameOver();
+			}
 		}
-		
-		
+
 	}
 	
 	
 	void heartTouched(final TargetObject spr){
-		mScore++;
-		this.mScoreText.setText("Score: "+mScore);
-		this.mKissSound.play();
-		this.removeSprite(spr);
+		// if game over hearts simply run on background
+		if (this.mGameRunning){
+		
+			mScore++;
+			this.mScoreText.setText("Score: "+mScore);
+			this.mKissSound.play();
+			this.removeSprite(spr);
+			
+			// leveling up
+			//int[] levelupScores = {0,5,15,45,70,100,200,300}; // when level is going up TODO: think how to implement this better
+			//float[] heartSpeedArr = {2,2,1.7f,1.5f,1.3f,1,0.7f,0.5f};
+			
+			if (gameMode==1) {
+				//spawnHandler.setTimerSeconds(0.3f);
+				return;
+			}
+			
+			// FIXME: more flexible solution
+			if (mScore==5 || mScore==15 || mScore==55 || mScore==100 || mScore==200 || mScore==300 || mScore==400 || mScore==500 ){
+				this.gameLevel++;
+				spawnHandler.setTimerSeconds(spawnSpeedArr[gameLevel]);
+			}
+		}
 
 	}
 	
 	void startNewGameClassic(){
-		gameRunning=true;
-		
+		mGameRunning=true;
 		
 	}
 	
@@ -465,11 +604,12 @@ public class First extends BaseGameActivity implements SnakeConstants {
 		final TargetObject spawnHeart=new TargetObject(randomX, randomY,heartsTextureReagionArr[rndHeart] ){
 			@Override
 			public boolean onAreaTouched(final TouchEvent pSceneTouchEvent, final float pTouchAreaLocalX, final float pTouchAreaLocalY) {
-				this.setVisible(false);
-				First.this.mScene.unregisterTouchArea(this);
-				//this.unregisterUpdateHandler(pUpdateHandler);
-				heartTouched(this);
-				//removeSprite(this);
+				if (First.this.mGameRunning){
+					this.setVisible(false);
+					First.this.mScene.unregisterTouchArea(this);
+					//this.unregisterUpdateHandler(pUpdateHandler);
+					heartTouched(this);
+				}
 				return true;
 			}
 		};
@@ -477,7 +617,11 @@ public class First extends BaseGameActivity implements SnakeConstants {
 		//MoveModifier aa=new MoveModifier(pDuration, pFromX, pToX, pFromY, pToY)
 		
 		Random rnd=new Random();
-		spawnHeart.registerEntityModifier(new MoveModifier(3, randomX, rnd.nextInt(CAMERA_WIDTH-70), randomY, 2){
+		//only way to create float random from to
+		
+		float heartSpeedLocal=(rnd.nextInt(10) +heartSpeedArr[gameLevel])/10;
+		spawnHeart.setZIndex(5);
+		spawnHeart.registerEntityModifier(new MoveModifier(heartSpeedLocal, randomX, rnd.nextInt(CAMERA_WIDTH-70), randomY, 2){
 			
 			@Override
 			protected void onModifierFinished(IEntity pItem) {
@@ -494,93 +638,337 @@ public class First extends BaseGameActivity implements SnakeConstants {
 		this.mScene.attachChild(spawnHeart);
 		this.mScene.registerTouchArea(spawnHeart);
 		
+		//this.mScene.getChild(LAYER_FOOD).attachChild(spawnHeart);
+		//this.mScene.registerTouchArea(spawnHeart);
+
 	}
 	
 	
+	private void setCountDown(){
+		this.mLivesText.setText("Time: " + this.secondsLeft);
+	}
+	
+	private void stopFlyUpText(final Text flyText){
+		// TODO: merge with removeSprite
+		
+		flyText.setVisible(false);
+		this.runOnUpdateThread(new Runnable() {
+            @Override
+            public void run() {
+                    /* Now it is save to remove the entity! */
+                    mScene.detachChild(flyText);
+            }
+		});
+		
+	}
+	
+	private void launchFlyUpText(){
+		
+		String hintText="Get all hearts!";
+		int px=70;
+		
+		if (gameMode==1){
+			hintText="Get all hearts you can \n before time runs out!";
+			px=10;
+		}
+		
+		final Text flyText=new Text(100,250,this.mFont,hintText,HorizontalAlign.CENTER);
+		
+		flyText.registerEntityModifier(new MoveModifier(2f, px, px, 250, 0){
+			@Override
+			protected void onModifierFinished(IEntity pItem) {
+				// TODO Auto-generated method stub
+				super.onModifierFinished(pItem);
+				stopFlyUpText(flyText);
+			}
+		});
+		this.mScene.attachChild(flyText);		
+		
+		
+	}
+	
+	
+	private void showAds () {
+		// Show the ad.
+			AdView adView = (AdView)findViewById(R.id.adView );
+			adView.setVisibility(android.view.View.VISIBLE);
+			adView.setEnabled(true);
+
+	        AdRequest request = new AdRequest();
+	        
+	        //request.addTestDevice("852FE8BF91ED9DA383DE924AF6345291");
+	        adView.loadAd(request);
+		}
+
+		//hide ads.
+		private void unshowAds () {
+			AdView adView = (AdView)findViewById(R.id.adView );
+			adView.setVisibility(android.view.View.INVISIBLE);
+			adView.setEnabled(false);
+		}
+
+	
 	void newGame(){
+
+		this.lives=3;
+		secondsLeft=30;
+
+		String livesText="Lives: ";
+		if (this.gameMode==0){
+			this.lives=3;
+			this.gameLevel=1;
+			this.mScore = 0;
+			secondsLeft=30;
+			livesText="Lives: "+this.lives;
+			
+			spawnHandler.setTimerSeconds(spawnSpeedArr[1]);
+			//this.flyUpText.setText("Get every heart!");
+			
+		}
+		else if (this.gameMode==1){
+			this.gameLevel=8;
+			this.mScore = 0;
+			this.secondsLeft=30;
+			spawnHandler.setTimerSeconds(0.4f);
+
+			this.mScene.registerUpdateHandler(this.countdownHandler);
+			livesText="Time: "+this.secondsLeft;
+			//this.flyUpText.setText("Get as meny hearts you can  before time runs out!");
+
+		}
+		
+		this.mGameRunning=true;
 		this.mScene.clearChildScene();
+		adsHandler.post(hideAdsRunnable);
+
+		gameOverBack.setVisible(false);
+		
+		this.mScoreText.setText("Score: "+mScore);
+		this.mLivesText.setText(livesText);
+		
 		this.mScene.registerUpdateHandler(this.spawnHandler);
+		launchFlyUpText();
+	}
+	
+	void showMainMenu(){
+		this.mScene.clearChildScene();
+		this.highScoreText.setVisible(false);
+    	
+    	if (this.touchToContinue!=null){
+        	this.touchToContinue.setVisible(false);
+        	this.mScene.unregisterTouchArea(this.touchToContinue);
+    		//this.mScene.detachChild(this.touchToContinue);
+    	}
+    	
+		this.mScene.setChildScene(this.mMenuScene, true, true, true);
+		//adsHandler.post(showAdsRunnable);
 	}
 	
 	private void createMenuScene() {
 		
 		this.mMenuScene = new Scene();
+		this.mMenuScene.attachChild(new Sprite(0, 0,this.mMenuBackgroundTextureRegion));
 		
-		Sprite newGameButton= new Sprite(10, 50, this.menuButtonsTextures[0]){
+		// button size is 227x51
+		// middle is (SCREEN_SIZE-BUTTON_SIZE)/2
+		Sprite newGameButton= new Sprite( ((CAMERA_WIDTH-227)/2) , 200, this.menuButtonsTextures[0]){
 			
 			@Override
 			public boolean onAreaTouched(TouchEvent pSceneTouchEvent,
 					float pTouchAreaLocalX, float pTouchAreaLocalY) {
-				// TODO Auto-generated method stub
-				//menuTouched=true;
-				//First.this.mMenuScene.setVisible(false);
-				//First.this.mScene.clearChildScene();
+				gameMode=0;
 				newGame();
-				this.setVisible(false);
-				System.out.println("menu touched");
+				//System.out.println("menu touched");
+				return super
+						.onAreaTouched(pSceneTouchEvent, pTouchAreaLocalX, pTouchAreaLocalY);
+			}
+		};
+		this.mMenuScene.attachChild(newGameButton);
+		this.mMenuScene.registerTouchArea(newGameButton);		
+		
+		Sprite newTimedGameButton= new Sprite( ((CAMERA_WIDTH-227)/2) , 270, this.menuButtonsTextures[1]){
+			@Override
+			public boolean onAreaTouched(TouchEvent pSceneTouchEvent,
+					float pTouchAreaLocalX, float pTouchAreaLocalY) {
+				gameMode=1;
+				newGame();
+				//this.setVisible(false);
+				//System.out.println("menu touched");
+				return super
+						.onAreaTouched(pSceneTouchEvent, pTouchAreaLocalX, pTouchAreaLocalY);
+			}
+		};
+		this.mMenuScene.attachChild(newTimedGameButton);
+		this.mMenuScene.registerTouchArea(newTimedGameButton);		
+		
+/*		
+		Sprite exitGameButton= new Sprite( ((CAMERA_WIDTH-227)/2) , 320, this.menuButtonsTextures[2]){
+			@Override
+			public boolean onAreaTouched(TouchEvent pSceneTouchEvent,
+					float pTouchAreaLocalX, float pTouchAreaLocalY) {
+				// exiting the game
 				
+				return super
+						.onAreaTouched(pSceneTouchEvent, pTouchAreaLocalX, pTouchAreaLocalY);
+			}
+		};
+		this.mMenuScene.attachChild(exitGameButton);
+		this.mMenuScene.registerTouchArea(exitGameButton);		
+*/		
+		
+		
+		this.mMenuScene.setBackgroundEnabled(true);
+		
+	    // Create the adView
+	    //adView = new AdView(this, AdSize.BANNER, PUBLISHER_ID);
+	    
+	    // how to add AdMob http://www.andengine.org/forums/tutorials/andengine-how-to-put-adverts-via-admob-inmobi-and-more-t6086.html
+		
+		
+	}
+	
+	void onTouchToContinue(){
+		
+		//System.out.println(" onTouchToContinue launched ");
+/*		
+		this.touchToContinue = new Sprite(0, 0, this.gameOverTouch){
+			
+			@Override
+			public boolean onAreaTouched(TouchEvent pSceneTouchEvent,
+					float pTouchAreaLocalX, float pTouchAreaLocalY) {
+				
+				System.out.println(" onTouchToContinue exec ");
+
+				showMainMenu();
 				
 				return super
 						.onAreaTouched(pSceneTouchEvent, pTouchAreaLocalX, pTouchAreaLocalY);
 			}
 		};
 		
-		//mMenuBackgroundTextureRegion
-		this.mMenuScene.attachChild(new Sprite(0, 0,this.mMenuBackgroundTextureRegion));
-		this.mMenuScene.attachChild(newGameButton);
-		
-		Sprite newTimedGameButton= new Sprite(10, 100, this.menuButtonsTextures[1]);
-		this.mMenuScene.attachChild(newTimedGameButton);
-		
-		
-		this.mMenuScene.registerTouchArea(newGameButton);		
-		
-		this.mMenuScene.setBackgroundEnabled(true);
-		
-		
-/*		
-		this.mMenuScene = new MenuScene(this.mCamera);
-
-		final SpriteMenuItem resetMenuItem = new SpriteMenuItem(MENU_RESET, this.mMenuResetTextureRegion);
-		resetMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
-		this.mMenuScene.addMenuItem(resetMenuItem);
-
-		final SpriteMenuItem quitMenuItem = new SpriteMenuItem(MENU_QUIT, this.mMenuQuitTextureRegion);
-		
-		quitMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
-		this.mMenuScene.addMenuItem(quitMenuItem);
-
-		this.mMenuScene.buildAnimations();
-
-		this.mMenuScene.setBackgroundEnabled(false);
-
-		//this.mMenuScene.setOnMenuItemClickListener(this);
- */
+		//this.touchToContinue = new Sprite(0, 0, this.gameOverTouch);
+		this.mScene.attachChild(this.touchToContinue);
+*/		
+    	this.touchToContinue.setVisible(true);
+    	this.mScene.registerTouchArea(this.touchToContinue);
 	}
-	
 
 	void createGameOverScene(){
 		
-		this.gameOverScene= new Scene();
+		this.gameOverBack = new Sprite(0, 0, this.gameOverBackGround);
+		this.mScene.attachChild(this.gameOverBack);
+		this.gameOverBack.setZIndex(4);
 		
-		TextureRegion tmp_reg = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mMenuBackGround, this, "back_violet.png", 0, 0);
-		Sprite gameOverBack = new Sprite(10, 50, tmp_reg);
-		this.gameOverScene.attachChild(gameOverBack);
+		this.touchToContinue = new Sprite(0, 0, this.gameOverTouch){
+			
+			@Override
+			public boolean onAreaTouched(TouchEvent pSceneTouchEvent,
+					float pTouchAreaLocalX, float pTouchAreaLocalY) {
+				
+				//System.out.println(" onTouchToContinue exec ");
 
+				showMainMenu();
+				
+				return super
+						.onAreaTouched(pSceneTouchEvent, pTouchAreaLocalX, pTouchAreaLocalY);
+			}
+		};
+		
+		//this.touchToContinue = new Sprite(0, 0, this.gameOverTouch);
+		this.mScene.attachChild(this.touchToContinue);
+    	//this.mScene.registerTouchArea(this.touchToContinue);
+    	this.touchToContinue.setVisible(false);
 		
 		
 		
+		
+		
+/*		
+		this.gameOverScene= new Scene();
+		Sprite gameOverBack = new Sprite(0, 0, this.gameOverBackGround  );
+		this.gameOverScene.attachChild(gameOverBack);
+		this.gameOverScene.setBackgroundEnabled(true);
+*/		
+	}
+	
+	
+	private void showGameOver(){
+		//this.mScene.detachChildren();
+		this.mGameRunning = false;
+		gameOverBack.setVisible(true);
+		this.mGameOverSound.play();
+		adsHandler.post(showAdsRunnable);
+		
+		String highScoreText="High score: " +this.highScores[gameMode];
+		
+		if (this.mScore>this.highScores[gameMode]){
+			highScoreText="New high score: "+this.mScore;
+			this.highScores[gameMode]=this.mScore;
+			this.setHighScore();
+		}
+		
+		this.highScoreText.setText(highScoreText);
+		this.highScoreText.setVisible(true);
+
+/*
+		
+/*		
+		this.mScene.setChildScene(this.gameOverScene, true, true, true);
+		this.mGameOverSound.play();
+*/		
+		
+		
+		
+        Timer timer3 = new Timer();
+        timer3.schedule(new TimerTask(){
+            public void run(){
+            	//System.out.print("game over over");
+            	//First.this.mScene.detachChild(gameOverBack);
+            	onTouchToContinue();
+            	//showMainMenu();
+            }
+        }
+        ,4000);
+        
 	}
 	
 	private void onGameOver() {
 		this.mGameRunning = false;
-		this.mGameOverSound.play();
 		this.mScene.unregisterUpdateHandler(spawnHandler);
 		
-		this.createGameOverScene();
-		this.mScene.setChildScene(this.gameOverScene);
+		if (gameMode==1){
+			this.mScene.unregisterUpdateHandler(this.countdownHandler);
+		}
+		
+		
+		this.showGameOver();
+		//this.mScene.setChildScene(this.gameOverScene);
+	}
+	
+	private void getHighScores(){
+	       SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
+	       
+	       this.highScores[0]=settings.getInt("classicHighScore", 0);
+	       this.highScores[1]=settings.getInt("timedHighScore", 0);
+	       
+	       //boolean silent = settings.getBoolean("silentMode", false);
+	       
+	       
+	}
+	
+	private void setHighScore(){
+	      SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
+	      SharedPreferences.Editor editor = settings.edit();
+	      editor.putInt("classicHighScore", this.highScores[0]);
+	      editor.putInt("timedHighScore", this.highScores[1]);
+
+	      editor.commit();
+		
 		
 	}
+	
+	
+	
 
 	// ===========================================================
 	// Inner and Anonymous Classes
