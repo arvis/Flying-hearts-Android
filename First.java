@@ -112,17 +112,9 @@ public class First extends LayoutGameActivity  {
 	private BitmapTextureAtlas[] heartsTextureAtlasArr;
 	private TextureRegion[] heartsTextureReagionArr;
 	
-	//private TextureRegion mTailPartTextureRegion;
-	//private TiledTextureRegion mHeadTextureRegion;
-	//private TiledTextureRegion mFrogTextureRegion;
-
 	private BitmapTextureAtlas mBackgroundTexture;
 	private TextureRegion mBackgroundTextureRegion;
 
-	//private BitmapTextureAtlas mOnScreenControlTexture;
-	//private TextureRegion mOnScreenControlBaseTextureRegion;
-	//private TextureRegion mOnScreenControlKnobTextureRegion;
-	
 	private BitmapTextureAtlas[] menuButtonsTextureAtlas;
 	private TextureRegion[] menuButtonsTextures;
 	
@@ -139,15 +131,9 @@ public class First extends LayoutGameActivity  {
 	private TextureRegion gameOverTouch;
 	
 	private Scene mScene;
-	//protected MenuScene mMenuScene;
 	private Scene mMenuScene;
-//	private Scene gameOverScene;
 	private Sprite gameOverBack; 
 	private Sprite touchToContinue; 
-	
-	
-//	private AdView adView; 
-
 	
 	public int mScore = 0;
 	public int lives=3;
@@ -170,10 +156,8 @@ public class First extends LayoutGameActivity  {
 	
 	private TimerHandler spawnHandler;
 	private TimerHandler countdownHandler;
-	//private MoveModifier flyUpModifier;
 
 	private Sound mGameOverSound;
-	//private Sound mMunchSound;
 	private Sound mKissSound;
 	private Sound mMissedSound;
 	
@@ -200,20 +184,7 @@ public class First extends LayoutGameActivity  {
         }
     };
     
-    
 	
-	// ===========================================================
-	// Constructors
-	// ===========================================================
-
-	// ===========================================================
-	// Getter & Setter
-	// ===========================================================
-
-	// ===========================================================
-	// Methods for/from SuperClass/Interfaces
-	// ===========================================================
-
 	@Override
 	public Engine onLoadEngine() {
 		this.mCamera = new Camera(0, 0, CAMERA_WIDTH, CAMERA_HEIGHT);
@@ -237,20 +208,7 @@ public class First extends LayoutGameActivity  {
 		this.mBitmapTextureAtlas = new BitmapTextureAtlas(128, 128, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
 		BitmapTextureAtlasTextureRegionFactory.setAssetBasePath("gfx/");
 		
-//		this.mOnScreenControlTexture = new BitmapTextureAtlas(256, 128, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
-//		this.mOnScreenControlBaseTextureRegion = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mOnScreenControlTexture, this, "onscreen_control_base.png", 0, 0);
-//		this.mOnScreenControlKnobTextureRegion = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mOnScreenControlTexture, this, "onscreen_control_knob.png", 128, 0);
-		
-		
 		heartsTextureAtlasArr=new BitmapTextureAtlas[HEART_COLOR_COUNT];
-		// TODO: recreate as loop
-
-/*		
-		heartsTextureAtlasArr[0]= new BitmapTextureAtlas(128, 128, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
-		heartsTextureAtlasArr[1]= new BitmapTextureAtlas(128, 128, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
-		heartsTextureAtlasArr[2]= new BitmapTextureAtlas(128, 128, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
-		heartsTextureAtlasArr[3]= new BitmapTextureAtlas(128, 128, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
-*/
 
 		heartsTextureAtlasArr[0]= new BitmapTextureAtlas(64, 64, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
 		heartsTextureAtlasArr[1]= new BitmapTextureAtlas(64, 64, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
@@ -284,14 +242,9 @@ public class First extends LayoutGameActivity  {
 		
 		this.menuButtonsTextures[0] = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.menuButtonsTextureAtlas[0], this, "dont_fail_in_love.png", 0, 0);
 		this.menuButtonsTextures[1] = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.menuButtonsTextureAtlas[1], this, "love_time.png", 0, 0);
-		//this.menuButtonsTextures[2] = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.menuButtonsTextureAtlas[1], this, "love_time.png", 0, 0);
 		this.mEngine.getTextureManager().loadTextures(menuButtonsTextureAtlas);
 
-		//TextureRegion menuBack  = BitmapTextureAtlasTextureRegionFactory.createFromAsset(texture1, this, "back_blue.png", 0, 0);
-
-		
 		this.mBackgroundTexture = new BitmapTextureAtlas(1024, 512, TextureOptions.DEFAULT);
-		
 		this.mMenuBackGround= new BitmapTextureAtlas(1024, 512, TextureOptions.DEFAULT);
 		this.mMenuBackgroundTextureRegion = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mMenuBackGround, this, "main_logo.png", 0, 0);
 
@@ -328,18 +281,13 @@ public class First extends LayoutGameActivity  {
 	public Scene onLoadScene() {
 		this.mEngine.registerUpdateHandler(new FPSLogger());
 
-		// Splash screens vienkaars: http://www.andengine.org/forums/tutorials/very-simple-splash-screen-alternative-t5790.html
-		
-		
 		this.mScene = new Scene();
 		for(int i = 0; i < LAYER_COUNT; i++) {
 			this.mScene.attachChild(new Entity());
 		}
 
-		/* No background color needed as we have a fullscreen background sprite. */
 		this.mScene.setBackgroundEnabled(true);
 		
-		//color hex is f3a8ab
 		this.mScene.setBackground(new ColorBackground(0.95294117647058823529411764705882f,
 				0.65882352941176470588235294117647f , 0.67058823529411764705882352941176f));
 		this.mScene.getChild(LAYER_BACKGROUND).attachChild(new Sprite(0, 0, this.mBackgroundTextureRegion));
@@ -357,24 +305,17 @@ public class First extends LayoutGameActivity  {
 		this.highScoreText= new ChangeableText(80,100, this.mFont, "High score: 0000",HorizontalAlign.CENTER,25 );
 		this.highScoreText.setVisible(false);
 
-//		this.flyUpText = new ChangeableText(10,200, this.mFont, "Collect all hearts!",HorizontalAlign.CENTER,255);
-//		this.flyUpText.setVisible(false);
-
-		
 		this.mScene.getChild(LAYER_SCORE).attachChild(this.mScoreText);
 		this.mScene.getChild(LAYER_SCORE).attachChild(this.mLivesText);
 		
 		this.highScoreText.setZIndex(3);
 		this.mScene.attachChild(this.highScoreText);
-		//this.mScene.attachChild(this.flyUpText);
 		
 		/* spawning heart every 2 seconds. */
 		this.spawnHandler=new TimerHandler(2f, true, new ITimerCallback() {
 			@Override
 			public void onTimePassed(final TimerHandler pTimerHandler) {
-				//if(First.this.mGameRunning) {
 					int maxHearts=gameLevel;
-					// no more than 5 hearts TODO: make better with constants
 					if (maxHearts>5) maxHearts=5;
 					
 					//on timed mode spawn much more
@@ -383,7 +324,6 @@ public class First extends LayoutGameActivity  {
 					for (int i=1;i<=gameLevel;i++){
 						First.this.spawnSprite();
 					}
-				//}
 			}
 		});
 		
@@ -400,7 +340,6 @@ public class First extends LayoutGameActivity  {
 					setCountDown();
 					First.this.onGameOver();
 				}
-				//}
 			}
 		});
 		
@@ -411,31 +350,6 @@ public class First extends LayoutGameActivity  {
 		return this.mScene;
 		
 		
-		/* The title-text. */
-		/*
-		final Text titleText = new Text(0, 0, this.mFont, "Snake\non a Phone!", HorizontalAlign.CENTER);
-		titleText.setPosition((CAMERA_WIDTH - titleText.getWidth()) * 0.5f, (CAMERA_HEIGHT - titleText.getHeight()) * 0.5f);
-		titleText.setScale(0.0f);
-		titleText.registerEntityModifier(new ScaleModifier(2, 0.0f, 1.0f));
-		this.mScene.getChild(LAYER_SCORE).attachChild(titleText);
-*/
-		/* The handler that removes the title-text and starts the game. */
-/*		
-		this.mScene.registerUpdateHandler(new TimerHandler(3.0f, new ITimerCallback() {
-			@Override
-			public void onTimePassed(final TimerHandler pTimerHandler) {
-				First.this.mScene.unregisterUpdateHandler(pTimerHandler);
-				First.this.mScene.getChild(LAYER_SCORE).detachChild(titleText);
-				First.this.mGameRunning = true;
-			}
-		}));
-*/
-		/* The game-over text. */
-/*		this.mGameOverText = new Text(0, 0, this.mFont, "Game\nOver", HorizontalAlign.CENTER);
-		this.mGameOverText.setPosition((CAMERA_WIDTH - this.mGameOverText.getWidth()) * 0.5f, (CAMERA_HEIGHT - this.mGameOverText.getHeight()) * 0.5f);
-		this.mGameOverText.registerEntityModifier(new ScaleModifier(3, 0.1f, 2.0f));
-		this.mGameOverText.registerEntityModifier(new RotationModifier(3, 0, 720));
-*/
 	}
 
 	
@@ -452,62 +366,12 @@ public class First extends LayoutGameActivity  {
     }
 	
 	
-	// testing how to show and hide ads
-	
-/*	
-	@Override
-	protected void onSetContentView() {
-		super.onSetContentView();
-
-		
-        final FrameLayout frameLayout = new FrameLayout(this);
-        final FrameLayout.LayoutParams frameLayoutLayoutParams =
-                new FrameLayout.LayoutParams(FrameLayout.LayoutParams.FILL_PARENT,
-                                             FrameLayout.LayoutParams.FILL_PARENT);
- 
-        //final AdView adView = new AdView(this, AdSize.BANNER, PUBLISHER_ID);
-        adView = new AdView(this, AdSize.BANNER, PUBLISHER_ID);
- 
-        adView.refreshDrawableState();
-        adView.setVisibility(AdView.VISIBLE);
-        final FrameLayout.LayoutParams adViewLayoutParams =
-                new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT,
-                                             FrameLayout.LayoutParams.WRAP_CONTENT,
-                                             Gravity.CENTER_HORIZONTAL|Gravity.TOP);
-
-        AdRequest adRequest = new AdRequest();
-        adRequest.addTestDevice("852FE8BF91ED9DA383DE924AF6345291");
-        
-        adView.loadAd(adRequest);
-        
- 
-        this.mRenderSurfaceView = new RenderSurfaceView(this);
-        mRenderSurfaceView.setRenderer(mEngine);
- 
-        final android.widget.FrameLayout.LayoutParams surfaceViewLayoutParams =
-                new FrameLayout.LayoutParams(super.createSurfaceViewLayoutParams());
- 
-        frameLayout.addView(this.mRenderSurfaceView, surfaceViewLayoutParams);
-        frameLayout.addView(adView, adViewLayoutParams);
- 
-        this.setContentView(frameLayout, frameLayoutLayoutParams);
-		
-		        
-	}
-*/	
-	
-	
 	@Override
 	public void onLoadComplete() {
 
 		
 	}
 
-	// ===========================================================
-	// Methods
-	// ===========================================================
-
-	
 	void removeSprite(final TargetObject spr ){
 		this.runOnUpdateThread(new Runnable() {
             @Override
@@ -548,15 +412,12 @@ public class First extends LayoutGameActivity  {
 			this.removeSprite(spr);
 			
 			// leveling up
-			//int[] levelupScores = {0,5,15,45,70,100,200,300}; // when level is going up TODO: think how to implement this better
-			//float[] heartSpeedArr = {2,2,1.7f,1.5f,1.3f,1,0.7f,0.5f};
 			
 			if (gameMode==1) {
-				//spawnHandler.setTimerSeconds(0.3f);
 				return;
 			}
 			
-			// FIXME: more flexible solution
+			// TODO: more flexible solution
 			if (mScore==5 || mScore==15 || mScore==55 || mScore==100 || mScore==200 || mScore==300 || mScore==400 || mScore==500 ){
 				this.gameLevel++;
 				spawnHandler.setTimerSeconds(spawnSpeedArr[gameLevel]);
@@ -592,8 +453,6 @@ public class First extends LayoutGameActivity  {
 	
 	void spawnSprite(){
 		
-		//String heartSpriteName=getSpriteName();
-		
 		Random rnd2=new Random();
 		int rndHeart=rnd2.nextInt(3);
 		
@@ -607,18 +466,13 @@ public class First extends LayoutGameActivity  {
 				if (First.this.mGameRunning){
 					this.setVisible(false);
 					First.this.mScene.unregisterTouchArea(this);
-					//this.unregisterUpdateHandler(pUpdateHandler);
 					heartTouched(this);
 				}
 				return true;
 			}
 		};
 		
-		//MoveModifier aa=new MoveModifier(pDuration, pFromX, pToX, pFromY, pToY)
-		
 		Random rnd=new Random();
-		//only way to create float random from to
-		
 		float heartSpeedLocal=(rnd.nextInt(10) +heartSpeedArr[gameLevel])/10;
 		spawnHeart.setZIndex(5);
 		spawnHeart.registerEntityModifier(new MoveModifier(heartSpeedLocal, randomX, rnd.nextInt(CAMERA_WIDTH-70), randomY, 2){
@@ -632,15 +486,8 @@ public class First extends LayoutGameActivity  {
 			
 			
 		});
-		//.registerEntityModifier(new MoveModifier(30, 0, CAMERA_WIDTH - face.getWidth(), 0, CAMERA_HEIGHT - face.getHeight()));
-		
-		// kur kusteeties http://code.google.com/p/andengine/source/browse/src/org/anddev/andengine/entity/modifier/MoveModifier.java
 		this.mScene.attachChild(spawnHeart);
 		this.mScene.registerTouchArea(spawnHeart);
-		
-		//this.mScene.getChild(LAYER_FOOD).attachChild(spawnHeart);
-		//this.mScene.registerTouchArea(spawnHeart);
-
 	}
 	
 	
@@ -649,13 +496,11 @@ public class First extends LayoutGameActivity  {
 	}
 	
 	private void stopFlyUpText(final Text flyText){
-		// TODO: merge with removeSprite
 		
 		flyText.setVisible(false);
 		this.runOnUpdateThread(new Runnable() {
             @Override
             public void run() {
-                    /* Now it is save to remove the entity! */
                     mScene.detachChild(flyText);
             }
 		});
@@ -696,11 +541,9 @@ public class First extends LayoutGameActivity  {
 
 	        AdRequest request = new AdRequest();
 	        
-	        //request.addTestDevice("852FE8BF91ED9DA383DE924AF6345291");
 	        adView.loadAd(request);
 		}
 
-		//hide ads.
 		private void unshowAds () {
 			AdView adView = (AdView)findViewById(R.id.adView );
 			adView.setVisibility(android.view.View.INVISIBLE);
@@ -792,8 +635,6 @@ public class First extends LayoutGameActivity  {
 					float pTouchAreaLocalX, float pTouchAreaLocalY) {
 				gameMode=1;
 				newGame();
-				//this.setVisible(false);
-				//System.out.println("menu touched");
 				return super
 						.onAreaTouched(pSceneTouchEvent, pTouchAreaLocalX, pTouchAreaLocalY);
 			}
@@ -801,54 +642,12 @@ public class First extends LayoutGameActivity  {
 		this.mMenuScene.attachChild(newTimedGameButton);
 		this.mMenuScene.registerTouchArea(newTimedGameButton);		
 		
-/*		
-		Sprite exitGameButton= new Sprite( ((CAMERA_WIDTH-227)/2) , 320, this.menuButtonsTextures[2]){
-			@Override
-			public boolean onAreaTouched(TouchEvent pSceneTouchEvent,
-					float pTouchAreaLocalX, float pTouchAreaLocalY) {
-				// exiting the game
-				
-				return super
-						.onAreaTouched(pSceneTouchEvent, pTouchAreaLocalX, pTouchAreaLocalY);
-			}
-		};
-		this.mMenuScene.attachChild(exitGameButton);
-		this.mMenuScene.registerTouchArea(exitGameButton);		
-*/		
-		
-		
 		this.mMenuScene.setBackgroundEnabled(true);
-		
-	    // Create the adView
-	    //adView = new AdView(this, AdSize.BANNER, PUBLISHER_ID);
-	    
-	    // how to add AdMob http://www.andengine.org/forums/tutorials/andengine-how-to-put-adverts-via-admob-inmobi-and-more-t6086.html
-		
 		
 	}
 	
 	void onTouchToContinue(){
 		
-		//System.out.println(" onTouchToContinue launched ");
-/*		
-		this.touchToContinue = new Sprite(0, 0, this.gameOverTouch){
-			
-			@Override
-			public boolean onAreaTouched(TouchEvent pSceneTouchEvent,
-					float pTouchAreaLocalX, float pTouchAreaLocalY) {
-				
-				System.out.println(" onTouchToContinue exec ");
-
-				showMainMenu();
-				
-				return super
-						.onAreaTouched(pSceneTouchEvent, pTouchAreaLocalX, pTouchAreaLocalY);
-			}
-		};
-		
-		//this.touchToContinue = new Sprite(0, 0, this.gameOverTouch);
-		this.mScene.attachChild(this.touchToContinue);
-*/		
     	this.touchToContinue.setVisible(true);
     	this.mScene.registerTouchArea(this.touchToContinue);
 	}
@@ -865,35 +664,19 @@ public class First extends LayoutGameActivity  {
 			public boolean onAreaTouched(TouchEvent pSceneTouchEvent,
 					float pTouchAreaLocalX, float pTouchAreaLocalY) {
 				
-				//System.out.println(" onTouchToContinue exec ");
-
 				showMainMenu();
-				
 				return super
 						.onAreaTouched(pSceneTouchEvent, pTouchAreaLocalX, pTouchAreaLocalY);
 			}
 		};
 		
-		//this.touchToContinue = new Sprite(0, 0, this.gameOverTouch);
 		this.mScene.attachChild(this.touchToContinue);
-    	//this.mScene.registerTouchArea(this.touchToContinue);
     	this.touchToContinue.setVisible(false);
-		
-		
-		
-		
-		
-/*		
-		this.gameOverScene= new Scene();
-		Sprite gameOverBack = new Sprite(0, 0, this.gameOverBackGround  );
-		this.gameOverScene.attachChild(gameOverBack);
-		this.gameOverScene.setBackgroundEnabled(true);
-*/		
+
 	}
 	
 	
 	private void showGameOver(){
-		//this.mScene.detachChildren();
 		this.mGameRunning = false;
 		gameOverBack.setVisible(true);
 		this.mGameOverSound.play();
@@ -909,23 +692,11 @@ public class First extends LayoutGameActivity  {
 		
 		this.highScoreText.setText(highScoreText);
 		this.highScoreText.setVisible(true);
-
-/*
-		
-/*		
-		this.mScene.setChildScene(this.gameOverScene, true, true, true);
-		this.mGameOverSound.play();
-*/		
-		
-		
 		
         Timer timer3 = new Timer();
         timer3.schedule(new TimerTask(){
             public void run(){
-            	//System.out.print("game over over");
-            	//First.this.mScene.detachChild(gameOverBack);
             	onTouchToContinue();
-            	//showMainMenu();
             }
         }
         ,4000);
@@ -942,7 +713,6 @@ public class First extends LayoutGameActivity  {
 		
 		
 		this.showGameOver();
-		//this.mScene.setChildScene(this.gameOverScene);
 	}
 	
 	private void getHighScores(){
@@ -950,10 +720,6 @@ public class First extends LayoutGameActivity  {
 	       
 	       this.highScores[0]=settings.getInt("classicHighScore", 0);
 	       this.highScores[1]=settings.getInt("timedHighScore", 0);
-	       
-	       //boolean silent = settings.getBoolean("silentMode", false);
-	       
-	       
 	}
 	
 	private void setHighScore(){
@@ -966,11 +732,4 @@ public class First extends LayoutGameActivity  {
 		
 		
 	}
-	
-	
-	
-
-	// ===========================================================
-	// Inner and Anonymous Classes
-	// ===========================================================
 }
